@@ -29,7 +29,7 @@
     </p:documentation>
   </p:option>
   
-  <p:option name="parser-path" select="'vendor/bundle/ruby/3.0.0/bin/anystyle'"/>
+  <p:option name="parser-path" select="'/usr/local/bin/anystyle'"/>
   
   <p:import href="http://xmlcalabash.com/extension/steps/library-1.0.xpl"/>
   <p:import href="http://transpect.io/xproc-util/file-uri/xpl/file-uri.xpl"/>
@@ -53,7 +53,7 @@
       </tr:file-uri>
       
       <cx:message cx:depends-on="get-parser-path" name="msg1">
-        <p:with-option name="message" select="concat('[info] parser executable: ', /c:result/@os-path)"/>
+        <p:with-option name="message" select="concat('[info] bib parser executable: ', /c:result/@os-path)"/>
       </cx:message>
       
       <pxf:info name="parser-info" fail-on-error="false" cx:depends-on="get-parser-path">
@@ -64,18 +64,54 @@
       
       <cx:message name="msg2" cx:depends-on="parser-info">
         <p:with-option name="message" select="if(exists(/c:error)) 
-                                              then '[error] parser executable does not exist or is not readable' 
-                                              else concat('[info] parser executable readable: ', c:file/@readable)"/>
+                                              then '[ERROR] bib parser executable does not exist or is not readable' 
+                                              else concat('[info] bib parser executable readable: ', c:file/@readable)"/>
       </cx:message>
       
-      <p:choose name="choose" cx:depends-on="parser-info">
-        <p:variable name="executable-is-readable" select="c:file/@readable eq 'true'"/>
+      <p:sink/>
+      
+      <tr:file-uri name="get-file-path">
+        <p:with-option name="filename" select="$href"/>
+        <p:input port="catalog">
+          <p:document href="http://this.transpect.io/xmlcatalog/catalog.xml"/>
+        </p:input>
+        <p:input port="resolver">
+          <p:document href="http://transpect.io/xslt-util/xslt-based-catalog-resolver/xsl/resolve-uri-by-catalog.xsl"/>
+        </p:input>
+      </tr:file-uri>
+      
+      <cx:message name="msg3" cx:depends-on="file-info">
+        <p:with-option name="message" select="'[info] bibliography file: ', /c:result/@os-path"/>
+      </cx:message>
+      
+      <pxf:info name="file-info" fail-on-error="false" cx:depends-on="get-file-path">
+        <p:with-option name="href" select="/*/@local-href">
+          <p:pipe port="result" step="get-file-path"/>
+        </p:with-option>
+      </pxf:info>
+      
+      <cx:message name="msg4" cx:depends-on="file-info">
+        <p:with-option name="message" select="if(exists(/c:error)) 
+                                              then '[ERROR] bibliography file does not exist or is not readable' 
+                                              else concat('[info] bibliography file readable: ', c:file/@readable)"/>
+      </cx:message>
+      
+      <p:choose name="choose" cx:depends-on="file-info">
+        <p:variable name="executable-readable" select="c:file/@readable">
+          <p:pipe port="result" step="parser-info"/>
+        </p:variable>
+        <p:variable name="file-readable" select="c:file/@readable">
+          <p:pipe port="result" step="file-info"/>
+        </p:variable>
         <p:variable name="parser-path" select="/c:result/@os-path">
           <p:pipe port="result" step="get-parser-path"/>
         </p:variable>
+        <p:variable name="file-path" select="/c:result/@os-path">
+          <p:pipe port="result" step="get-file-path"/>
+        </p:variable>
         <p:variable name="parser-args" select="'-f xml parse'"/>
-        <p:variable name="run" select="string-join(($parser-path, $parser-args, $href), ' ')"/>    
-        <p:when test="$executable-is-readable eq 'true'">
+        <p:variable name="run" select="string-join(($parser-path, $parser-args, $file-path), ' ')"/>    
+        <p:when test="$executable-readable eq 'true' and $file-readable eq 'true'">
           
           <p:exec name="run-parser" result-is-xml="true">
             <p:input port="source">
