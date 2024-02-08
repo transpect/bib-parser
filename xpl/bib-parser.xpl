@@ -128,9 +128,7 @@
           <p:error code="exectutable-not-found">
             <p:input port="source">
               <p:inline>
-                <c:error>
-                  <c:error>exectutable not found</c:error>
-                </c:error>
+                <c:body>Exectutable of bibliography parser is not available.</c:body>
               </p:inline>
             </p:input>
           </p:error>
