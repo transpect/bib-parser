@@ -29,11 +29,11 @@
     </p:documentation>
   </p:option>
   
+  <p:option name="ruby-path" select="'/usr/local/bin/ruby'"/>
   <p:option name="parser-path" select="'/usr/local/bin/anystyle'"/>
   
   <p:import href="http://xmlcalabash.com/extension/steps/library-1.0.xpl"/>
   <p:import href="http://transpect.io/xproc-util/file-uri/xpl/file-uri.xpl"/>
-  <p:import href="http://transpect.io/xproc-util/store-debug/xpl/store-debug.xpl"/>
   
   <p:try name="try">
     <p:group>
@@ -113,14 +113,37 @@
         <p:variable name="run" select="string-join(($parser-path, $parser-args, $file-path), ' ')"/>    
         <p:when test="$executable-readable eq 'true' and $file-readable eq 'true'">
           
+          <cx:message name="msg5" cx:depends-on="file-info">
+            <p:with-option name="message" select="concat('[info] run: $ ruby ', $run)"/>
+          </cx:message>
+          
           <p:exec name="run-parser" result-is-xml="true">
             <p:input port="source">
               <p:empty/>
             </p:input>
-            <p:with-option name="command" select="'ruby'"/>
+            <p:with-option name="command" select="$ruby-path"/>
             <p:with-option name="args" 
                            select="$run"/>
           </p:exec>
+          
+          <p:choose>
+            <p:when test="exists(/c:result/*)">
+              
+              <p:identity/>
+              
+            </p:when>
+            <p:otherwise>
+              
+              <p:error code="no-results">
+                <p:input port="source">
+                  <p:inline>
+                    <c:body>The bib-parser run yielded no results, presumably because it failed.</c:body>
+                  </p:inline>
+                </p:input>
+              </p:error>
+              
+            </p:otherwise>
+          </p:choose>
         
         </p:when>
         <p:otherwise>
