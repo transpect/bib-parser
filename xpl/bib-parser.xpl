@@ -114,7 +114,7 @@
         <p:when test="$executable-readable eq 'true' and $file-readable eq 'true'">
           
           <cx:message name="msg5" cx:depends-on="file-info">
-            <p:with-option name="message" select="concat('[info] run: $ ruby ', $run)"/>
+            <p:with-option name="message" select="concat('[info] run: $ ', $ruby-path, ' ', $run)"/>
           </cx:message>
           
           <p:exec name="run-parser" result-is-xml="true">
